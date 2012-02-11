@@ -137,6 +137,7 @@ class TomaccoGame(object):
         self.deck = Deck(card_cls=TomaccoCard)
         for i in range(decks - 1):
             self.deck += Deck(card_cls=TomaccoCard)
+        self.deck.shuffle()
             
         self.activePile = []
             
