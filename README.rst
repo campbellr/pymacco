@@ -2,7 +2,7 @@
 pymacco
 =======
 
-``pymacco`` is (will be?) a python implementation the the card game Tomacco (a variation
+``pymacco`` is (will be?) a python implementation of the card game Tomacco (a variation
 of `shithead <http://en.wikipedia.org/wiki/Shithead_(card_game)>`_).
 
 Installation
@@ -15,4 +15,3 @@ Usage
 
 TODO
 
-Test new commit (marc)
