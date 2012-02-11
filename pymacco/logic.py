@@ -21,6 +21,8 @@ class Card(object):
 
     def __str__(self):
         return "Card(%s, %s)" % (self.suit, self.value)
+    def __repr__(self):
+        return str(self)
 
 
 class TomaccoCard(Card):
@@ -95,16 +97,50 @@ class Deck(object):
         return self
 
 
+class TomaccoHand(object):
+    def __init__(self):
+        self.cardsInHand = []
+        self.cardsFaceUp = []
+        self.cardsFaceDown = []
+    def __str__(self):
+        return "Hand(InHand: %s, FaceUp: %s, FaceDown: %s)" % \
+               (self.cardsInHand, self.cardsFaceUp, self.cardsFaceDown)
+    def __repr__(self):
+        return str(self) 
+        
+        
+class Player(object):
+    def __init__(self, name):
+        self.name = name
+        self.hand = TomaccoHand()
+    def __str__(self):
+        return "Player(%s)" % self.name
+    def __repr__(self):
+        return str(self)
+
+
 class TomaccoGame(object):
     """ Represents a game of tomacco.
     """
     def __init__(self, players, decks=1):
-        deck = Deck(card_cls=TomaccoCard)
+        self.deck = Deck(card_cls=TomaccoCard)
         for i in range(decks - 1):
-            deck += Deck(card_cls=TomaccoCard)
+            self.deck += Deck(card_cls=TomaccoCard)
+            
+        if not isinstance(players, list):
+            players = [players]
+        self.players = players
 
     def deal(self):
-        pass
-
+        numInHand = 6*len(self.players)
+        numFaceDown = 3*len(self.players)
+        
+        for card in self.deck[:numInHand]:
+            for player in self.players:
+                player.hand.cardsInHand.append(card)
+                
+        for card in self.deck[numInHand:numInHand+numFaceDown]:
+            for player in self.players:
+                player.hand.cardsFaceDown.append(card)        
 
 
