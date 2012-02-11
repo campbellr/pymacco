@@ -2,7 +2,6 @@
 """
 import random
 
-
 class Card(object):
     """ Representation of a single card.
     """
@@ -23,7 +22,11 @@ class Card(object):
         return "Card(%s, %s)" % (self.suit, self.value)
     def __repr__(self):
         return str(self)
-
+    def __cmp__(self, card):
+        return cmp(self.suit, card.suit) and \
+               cmp(self.value, card.value)
+    def __hash__(self):
+        return hash((self.suit, self.value))
 
 class TomaccoCard(Card):
     """ A card specfically for use in tomacco
@@ -55,7 +58,6 @@ class TomaccoCard(Card):
     def __cmp__(self, other):
         # TODO: implement this!
         pass
-
 
 class Deck(object):
     """ Representation of a single deck of cards.
@@ -96,7 +98,6 @@ class Deck(object):
         self.cards += other.cards
         return self
 
-
 class TomaccoHand(object):
     def __init__(self):
         self.cardsInHand = []
@@ -106,8 +107,15 @@ class TomaccoHand(object):
         return "Hand(InHand: %s, FaceUp: %s, FaceDown: %s)" % \
                (self.cardsInHand, self.cardsFaceUp, self.cardsFaceDown)
     def __repr__(self):
-        return str(self) 
-        
+        return str(self)
+    def __contains__(self, card):
+        allCards = self.cardsInHand + self.cardsFaceUp + self.cardsFaceDown
+        return card in allCards
+    def __getitem__(self, card):
+        for cards in [self.cardsInHand, self.cardsFaceUp, self.cardsFaceDown]:
+            if card in cards:
+                return cards.remove(card)
+        raise Exception("%s not in this hand!" % card)
         
 class Player(object):
     def __init__(self, name):
@@ -117,8 +125,11 @@ class Player(object):
         return "Player(%s)" % self.name
     def __repr__(self):
         return str(self)
-
-
+    def playCard(self, card):
+        if card not in self.hand:
+            raise Exception("%s not in %s's hand!" % (card, self.name))
+        return self.hand[card]
+        
 class TomaccoGame(object):
     """ Represents a game of tomacco.
     """
@@ -126,6 +137,8 @@ class TomaccoGame(object):
         self.deck = Deck(card_cls=TomaccoCard)
         for i in range(decks - 1):
             self.deck += Deck(card_cls=TomaccoCard)
+            
+        self.activePile = []
             
         if not isinstance(players, list):
             players = [players]
@@ -141,6 +154,4 @@ class TomaccoGame(object):
                 
         for card in self.deck[numInHand:numInHand+numFaceDown]:
             for player in self.players:
-                player.hand.cardsFaceDown.append(card)        
-
-
+                player.hand.cardsFaceDown.append(card)
