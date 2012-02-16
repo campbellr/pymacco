@@ -2,6 +2,8 @@
 """
 import random
 
+from ai import Player
+
 class Card(object):
     """ Representation of a single card.
     """
@@ -117,19 +119,6 @@ class TomaccoHand(object):
                 return cards.remove(card)
         raise Exception("%s not in this hand!" % card)
         
-class Player(object):
-    def __init__(self, name):
-        self.name = name
-        self.hand = TomaccoHand()
-    def __str__(self):
-        return "Player(%s)" % self.name
-    def __repr__(self):
-        return str(self)
-    def playCard(self, card):
-        if card not in self.hand:
-            raise Exception("%s not in %s's hand!" % (card, self.name))
-        return self.hand[card]
-        
 class TomaccoGame(object):
     """ Represents a game of tomacco.
     """
@@ -149,10 +138,15 @@ class TomaccoGame(object):
         numInHand = 6*len(self.players)
         numFaceDown = 3*len(self.players)
         
+        hands = [TomaccoHand() for i in range(len(self.players))]
+                 
         for card in self.deck[:numInHand]:
-            for player in self.players:
-                player.hand.cardsInHand.append(card)
+            for hand in hands:
+                hand.cardsInHand.append(card)
                 
         for card in self.deck[numInHand:numInHand+numFaceDown]:
-            for player in self.players:
-                player.hand.cardsFaceDown.append(card)
+            for hand in hands:
+                hand.cardsFaceDown.append(card)
+                
+        for player, hand in zip(self.players, hands):
+            player.hand = hand
