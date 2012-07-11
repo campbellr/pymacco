@@ -10,13 +10,9 @@ Installation
 
 In the future ``Pymacco`` will be installable using ``pip install``.
 
-Usage
+
+Rules
 =====
-
-TODO
-
-Official Tomacco Rules
-======================
  
 Preparation:
 ------------

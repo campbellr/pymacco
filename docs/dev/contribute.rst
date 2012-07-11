@@ -1,0 +1,4 @@
+Contributing to Pymacco
+=======================
+
+TODO
