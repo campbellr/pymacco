@@ -3,6 +3,7 @@
 import random
 
 from ai import Player
+import rules
 
 class Card(object):
     """ Representation of a single card.
@@ -22,11 +23,23 @@ class Card(object):
 
     def __str__(self):
         return "Card(%s, %s)" % (self.suit, self.value)
+
     def __repr__(self):
         return str(self)
+
     def __cmp__(self, card):
-        return cmp(self.suit, card.suit) and \
-               cmp(self.value, card.value)
+        if not isinstance(card, Card):
+            raise TypeError("Cannot compare a %s to a Card." % type(card))
+
+        # 2 of Clubs < 3 of Clubs from the values.
+        # 2 of Clubs < 2 of Spades from the suits.
+        # Arbitrarly decide that suits are more important, making the default sort by suit of
+        # increasing values.
+        thisCard = (self.suits.index(self.suit), self.values.index(self.value))
+        otherCard = (self.suits.index(card.suit), self.values.index(card.value))
+
+        return cmp(thisCard, otherCard)
+
     def __hash__(self):
         return hash((self.suit, self.value))
 
@@ -35,6 +48,7 @@ class TomaccoCard(Card):
     """
     clear_cards = ['10', 'Ace']
     reset_cards = ['2']
+    wild_cards = ['2', '10']
 
     def is_reset(self):
         """ Return whether or not the card is a 'reset card'.
@@ -42,24 +56,39 @@ class TomaccoCard(Card):
             A 'reset card' is a card that resets the count of the cards on
             the table.
         """
-        if self.value in self.reset_cards:
-            return True
-
-        return False
+        return self.value in self.reset_cards
 
     def is_clear(self):
         """ Return whether or not the card is a 'clear card'.
 
             A 'clear card' will clear existing cards on the table.
         """
-        if self.value in self.clear_cards:
-            return True
+        return self.value in self.clear_cards
 
-        return False
+    def is_wild(self):
+        """ Return whether or not the card is a 'wild card'.
+
+            A 'wild card' can be played at any time.
+        """
+        return self.value in self.wild_cards
 
     def __cmp__(self, other):
-        # TODO: implement this!
-        pass
+        """ Arbitrarly, say that a return > 0 = card is a valid play.
+
+            Also say 'self' is being played on the 'other' card.
+
+            Example - get valid cards in hand:
+                validCards = [card for card in myHand if card > pile.topCard]
+        """
+        if not isinstance(other, Card):
+            raise TypeError("Cannot compare a %s to a TommacoCard." % type(other))
+
+        if self.is_wild():
+            return 1
+
+        thisCard = self.values.index(self.value)
+        otherCard = self.values.index(other.value)
+        return cmp(thisCard, otherCard)
 
 class Deck(object):
     """ Representation of a single deck of cards.
@@ -105,48 +134,69 @@ class TomaccoHand(object):
         self.cardsInHand = []
         self.cardsFaceUp = []
         self.cardsFaceDown = []
+
     def __str__(self):
         return "Hand(InHand: %s, FaceUp: %s, FaceDown: %s)" % \
                (self.cardsInHand, self.cardsFaceUp, self.cardsFaceDown)
+
     def __repr__(self):
         return str(self)
+
     def __contains__(self, card):
         allCards = self.cardsInHand + self.cardsFaceUp + self.cardsFaceDown
         return card in allCards
+
     def __getitem__(self, card):
         for cards in [self.cardsInHand, self.cardsFaceUp, self.cardsFaceDown]:
             if card in cards:
                 return cards.remove(card)
         raise Exception("%s not in this hand!" % card)
-        
+
 class TomaccoGame(object):
     """ Represents a game of tomacco.
     """
-    def __init__(self, players, decks=1):
+    def __init__(self, players, decks=None):
+        players, decks = self._validateArgs(players, decks)
         self.deck = Deck(card_cls=TomaccoCard)
         for i in range(decks - 1):
             self.deck += Deck(card_cls=TomaccoCard)
         self.deck.shuffle()
-            
+
         self.activePile = []
-            
-        if not isinstance(players, list):
-            players = [players]
         self.players = players
+
+    def _validateArgs(self, players, decks):
+        """ Validates the args
+        """
+        if not isinstance(players, list) and not
+               isinstance(players, basestring) and getattr(players, '__iter__', False):
+            # iterable that isn't a string or list, convert directly.
+            players = list(players)
+        elif not isinstance(players, list):
+            players = [players]
+
+        if len(players) < 2:
+            raise ValueError("A Minimum of two players are required to play Tomacco")
+
+        if decks is None:
+            # 1 deck for every 5 players
+            decks = rules.getNumDecks(len(players))
+
+        return players, decks
 
     def deal(self):
         numInHand = 6*len(self.players)
         numFaceDown = 3*len(self.players)
-        
+
         hands = [TomaccoHand() for i in range(len(self.players))]
-                 
+
         for card in self.deck[:numInHand]:
             for hand in hands:
                 hand.cardsInHand.append(card)
-                
+
         for card in self.deck[numInHand:numInHand+numFaceDown]:
             for hand in hands:
                 hand.cardsFaceDown.append(card)
-                
+
         for player, hand in zip(self.players, hands):
             player.hand = hand
