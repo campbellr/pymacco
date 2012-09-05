@@ -1,8 +1,8 @@
 class Player(object):
-    def __init__(self, name, game):
+    def __init__(self, name):
         self.name = name
-        self.game = game
 
+        self.game = None
         self.hand = None
         
     def __str__(self):
