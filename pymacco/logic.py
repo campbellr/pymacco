@@ -83,19 +83,12 @@ class TomaccoCard(Card):
         if not isinstance(other, TomaccoCard):
             raise TypeError("Cannot compare a %s to a TomaccoCard." % type(other))
 
-
-        # TODO (doug): changed this from self.is_wild() to self._isAlwaysPlayable()
-        # because if i'm not mistaken ace can be played on anything but the old method
-        # would not let an ace be played on an ace. Is this correct?
-        if self._isAlwaysPlayable():
+        if self._isWild():
             return 1
 
         thisCard = self.values.index(self.value)
         otherCard = self.values.index(other.value)
         return cmp(thisCard, otherCard)
-
-    def _isAlwaysPlayable(self):
-        return self.is_reset() or self.is_clear() or self.is_wild()
 
     def beats(self, card):
         """ Returns whether or not this card beats the given card.
