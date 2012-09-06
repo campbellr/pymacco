@@ -19,6 +19,9 @@ class AIPlayer(object):
         if card not in self.hand:
             raise Exception("%s not in %s's hand!" % (card, self.name))
         return self.hand[card]
+    
+    def chooseFaceUpCards(self):
+        return random.sample(self.hand.cardsInHand, 3)
 
     def chooseCardToPlay(self):
         playableCards = self.getPlayableCards()

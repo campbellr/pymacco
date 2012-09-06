@@ -166,6 +166,18 @@ class TomaccoHand(object):
                 return cards.remove(card)
         raise Exception("%s not in this hand!" % card)
 
+    def pickUp(self, cards):
+        """ Pick up one or more cards.
+
+            :param cards: One or more cards to pick up.
+            :type cards: :py:class:`logic.TomaccoCard` or
+            :py:func:`list` of :py:class:`logic.TomaccoCard`
+        """
+        if isinstance(cards, list):
+            self.cardsInHand.extend(cards)
+        else:
+            self.cardsInHand.append(cards)
+
 class TomaccoPile(object):
     def __init__(self):
         self._pile = []
@@ -184,6 +196,19 @@ class TomaccoPile(object):
         """
         return card.beats(self.getTopCard())
 
+    def play(self, card):
+        """ Play a card on the top of the pile.
+
+            :param card: The card to play.
+            :type card: :py:class:`logic.TomaccoCard`
+        """
+        self._pile.append(card)
+
+    def pickUp(self):
+        cards =  self._pile[:]
+        self._pile = []
+        return cards
+
 class TomaccoGame(object):
     """ Represents a game of tomacco.
     """
@@ -198,6 +223,11 @@ class TomaccoGame(object):
         self.players = players
         for player in players:
             player.game = self
+        # TODO: choose the starting player as the player to the right of the dealer.
+        self.currentPlayer = random.choice(self.players)
+
+    def start():
+        self.deal()
 
     def _validateArgs(self, players, decks):
         """ Validates the args
@@ -219,6 +249,7 @@ class TomaccoGame(object):
         return players, decks
 
     def deal(self):
+        # TODO: pick a dealer randomly, deal starting to the right of the dealer.
         numInHand = 6*len(self.players)
         numFaceDown = 3*len(self.players)
 
@@ -234,6 +265,29 @@ class TomaccoGame(object):
 
         for player, hand in zip(self.players, hands):
             player.hand = hand
+
+    def getNextPlayer(self):
+        return self.currentPlayer
+
+    def pickUp(self):
+        """ Remove and return the top card off the deck.
+
+            :return: (:py:class:`TomaccoCard`) The top card off the deck.
+        """
+        return self.deck.removeTopCard()
+
+    def pickUpPile(self):
+        return self.activePile.pickUp()
+
+    def playCard(self, player, card):
+        if not self.canPlay(card):
+            raise Exception("Player attempted to play a card that cannot be played.")
+        self.activePile.play(card)
+        self._incrementPlayer()
+
+    def _incrementPlayer(self):
+        nextIndex = self.players.index(self.currentPlayer)+1 % len(self.players)
+        self.currentPlayer = self.players[nextIndex]
 
     def canPlay(self, card):
         """ Validate whether the given card can be played.
