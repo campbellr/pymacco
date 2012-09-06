@@ -83,7 +83,7 @@ class TomaccoCard(Card):
         if not isinstance(other, TomaccoCard):
             raise TypeError("Cannot compare a %s to a TomaccoCard." % type(other))
 
-        if self._isWild():
+        if self.is_wild():
             return 1
 
         thisCard = self.values.index(self.value)
