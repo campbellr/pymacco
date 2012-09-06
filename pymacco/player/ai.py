@@ -1,7 +1,7 @@
 """ This module contains the logic the artificial opponents
 """
 import random
-from player import Player
+from player.player import Player
 
 from util import GameOverException
 

@@ -1,6 +1,10 @@
+""" This module provides a base implementation for UI's that all UI's
+    should extend.
+"""
 from util import GameOverException
+from logic import TomaccoGame
 
-class BaseUI(object):
+class BaseUi(object):
     """ Provides a base implementation of a UI that all UI's must follow.
     """
 

@@ -1,3 +1,7 @@
+""" This module contains the base Player representation.
+
+    Player can be extended to create any AI players.
+"""
 class Player(object):
     def __init__(self, name):
         self.name = name

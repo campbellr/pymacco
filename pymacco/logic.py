@@ -121,7 +121,9 @@ class Deck(object):
         random.shuffle(self.cards)
 
     def removeTopCard(self):
-        return self.cards.pop()
+        if len(self.cards) > 0:
+            return self.cards.pop()
+        return None
 
     def __getitem__(self, key):
         if isinstance(key, slice):
@@ -173,6 +175,9 @@ class TomaccoHand(object):
             :type cards: :py:class:`logic.TomaccoCard` or
             :py:func:`list` of :py:class:`logic.TomaccoCard`
         """
+        if not cards:
+            print "no cards to pickup"
+            return
         if isinstance(cards, list):
             self.cardsInHand.extend(cards)
         else:
@@ -183,7 +188,9 @@ class TomaccoPile(object):
         self._pile = []
 
     def getTopCard(self):
-        return self._pile[len(self._pile-1)]
+        if len(self._pile) > 0:
+            return self._pile[len(self._pile-1)]
+        return None
 
     def canPlay(self, card):
         """ Validate whether the given card can be played on the pile.
@@ -226,7 +233,7 @@ class TomaccoGame(object):
         # TODO: choose the starting player as the player to the right of the dealer.
         self.currentPlayer = random.choice(self.players)
 
-    def start():
+    def start(self):
         self.deal()
 
     def _validateArgs(self, players, decks):
@@ -250,14 +257,16 @@ class TomaccoGame(object):
 
     def deal(self):
         # TODO: pick a dealer randomly, deal starting to the right of the dealer.
-        numInHand = 6*len(self.players)
-        numFaceDown = 3*len(self.players)
+        numInHand = 6
+        numFaceDown = 3
 
         hands = [TomaccoHand() for i in range(len(self.players))]
 
         for i in range(numInHand):
             for hand in hands:
-                hand.cardsInHand.append(self.deck.removeTopCard())
+                card = self.deck.removeTopCard()
+                print card.value
+                hand.cardsInHand.append(card)
 
         for i in range(numFaceDown):
             for hand in hands:
