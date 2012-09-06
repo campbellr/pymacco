@@ -2,7 +2,7 @@
 """
 import random
 
-from ai import Player
+from player.player import Player
 import rules
 
 class Card(object):
@@ -44,7 +44,7 @@ class Card(object):
         return hash((self.suit, self.value))
 
 class TomaccoCard(Card):
-    """ A card specfically for use in tomacco
+    """ A card specifically for use in tomacco
     """
     clear_cards = ['10', 'Ace']
     reset_cards = ['2']
@@ -80,8 +80,8 @@ class TomaccoCard(Card):
             Example - get valid cards in hand:
                 validCards = [card for card in myHand if card > pile.topCard]
         """
-        if not isinstance(other, Card):
-            raise TypeError("Cannot compare a %s to a TommacoCard." % type(other))
+        if not isinstance(other, TomaccoCard):
+            raise TypeError("Cannot compare a %s to a TomaccoCard." % type(other))
 
         if self.is_wild():
             return 1
@@ -89,6 +89,17 @@ class TomaccoCard(Card):
         thisCard = self.values.index(self.value)
         otherCard = self.values.index(other.value)
         return cmp(thisCard, otherCard)
+
+    def beats(self, card):
+        """ Returns whether or not this card beats the given card.
+
+            :param card: The card to compare this card to.
+            :type card: :py:class:`logic.TomaccoCard`
+
+            :return: True if this card can be played on the given card,
+            otherwise False.
+        """
+        return self > card
 
 class Deck(object):
     """ Representation of a single deck of cards.
@@ -108,6 +119,9 @@ class Deck(object):
         """ Shuffle the deck.
         """
         random.shuffle(self.cards)
+
+    def removeTopCard(self):
+        return self.cards.pop()
 
     def __getitem__(self, key):
         if isinstance(key, slice):
@@ -152,6 +166,24 @@ class TomaccoHand(object):
                 return cards.remove(card)
         raise Exception("%s not in this hand!" % card)
 
+class TomaccoPile(object):
+    def __init__(self):
+        self._pile = []
+
+    def getTopCard(self):
+        return self._pile[len(self._pile-1)]
+
+    def canPlay(self, card):
+        """ Validate whether the given card can be played on the pile.
+
+            :param card: The card to check for playability.
+            :type card: :py:class:`logic.TomaccoCard`
+
+            :return: :py:func:`bool` True if the card can be played on this pile,
+            otherwise False.
+        """
+        return card.beats(self.getTopCard())
+
 class TomaccoGame(object):
     """ Represents a game of tomacco.
     """
@@ -162,13 +194,15 @@ class TomaccoGame(object):
             self.deck += Deck(card_cls=TomaccoCard)
         self.deck.shuffle()
 
-        self.activePile = []
+        self.activePile = TomaccoPile()
         self.players = players
+        for player in players:
+            player.game = self
 
     def _validateArgs(self, players, decks):
         """ Validates the args
         """
-        if not isinstance(players, list) and not
+        if not isinstance(players, list) and not \
                isinstance(players, basestring) and getattr(players, '__iter__', False):
             # iterable that isn't a string or list, convert directly.
             players = list(players)
@@ -190,13 +224,24 @@ class TomaccoGame(object):
 
         hands = [TomaccoHand() for i in range(len(self.players))]
 
-        for card in self.deck[:numInHand]:
+        for i in range(numInHand):
             for hand in hands:
-                hand.cardsInHand.append(card)
+                hand.cardsInHand.append(self.deck.removeTopCard())
 
-        for card in self.deck[numInHand:numInHand+numFaceDown]:
+        for i in range(numFaceDown):
             for hand in hands:
-                hand.cardsFaceDown.append(card)
+                hand.cardsFaceDown.append(self.deck.removeTopCard())
 
         for player, hand in zip(self.players, hands):
             player.hand = hand
+
+    def canPlay(self, card):
+        """ Validate whether the given card can be played.
+
+            :param card: The card to check for playability.
+            :type card: :py:class:`logic.TomaccoCard`
+
+            :return: :py:func:`bool` True if the card can be played,
+            otherwise False.
+        """
+        return self.activePile.canPlay(card)
