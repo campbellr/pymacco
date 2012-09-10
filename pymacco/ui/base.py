@@ -35,7 +35,10 @@ class BaseUi(object):
         player.pickUp()
         self._displayCards(player)
         card = self._getPlayersPlay(player)
-        player.playCard(card)
+        if not card:
+            player.pickUpPile()
+        else:
+            player.playCard(card)
 
     def _displayCards(self, player):
         """ Display the cards for the given player.

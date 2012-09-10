@@ -189,7 +189,7 @@ class TomaccoPile(object):
 
     def getTopCard(self):
         if len(self._pile) > 0:
-            return self._pile[len(self._pile-1)]
+            return self._pile[len(self._pile)-1]
         return None
 
     def canPlay(self, card):
@@ -201,6 +201,8 @@ class TomaccoPile(object):
             :return: :py:func:`bool` True if the card can be played on this pile,
             otherwise False.
         """
+        if not self.getTopCard():
+            return True
         return card.beats(self.getTopCard())
 
     def play(self, card):
@@ -286,6 +288,7 @@ class TomaccoGame(object):
         return self.deck.removeTopCard()
 
     def pickUpPile(self):
+        self._incrementPlayer()
         return self.activePile.pickUp()
 
     def playCard(self, player, card):
@@ -295,7 +298,7 @@ class TomaccoGame(object):
         self._incrementPlayer()
 
     def _incrementPlayer(self):
-        nextIndex = self.players.index(self.currentPlayer)+1 % len(self.players)
+        nextIndex = (self.players.index(self.currentPlayer)+1) % len(self.players)
         self.currentPlayer = self.players[nextIndex]
 
     def canPlay(self, card):
