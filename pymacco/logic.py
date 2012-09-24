@@ -121,7 +121,9 @@ class Deck(object):
         random.shuffle(self.cards)
 
     def removeTopCard(self):
-        return self.cards.pop()
+        if len(self.cards) > 0:
+            return self.cards.pop()
+        return None
 
     def __getitem__(self, key):
         if isinstance(key, slice):
@@ -166,12 +168,29 @@ class TomaccoHand(object):
                 return cards.remove(card)
         raise Exception("%s not in this hand!" % card)
 
+    def pickUp(self, cards):
+        """ Pick up one or more cards.
+
+            :param cards: One or more cards to pick up.
+            :type cards: :py:class:`logic.TomaccoCard` or
+            :py:func:`list` of :py:class:`logic.TomaccoCard`
+        """
+        if not cards:
+            print "no cards to pickup"
+            return
+        if isinstance(cards, list):
+            self.cardsInHand.extend(cards)
+        else:
+            self.cardsInHand.append(cards)
+
 class TomaccoPile(object):
     def __init__(self):
         self._pile = []
 
     def getTopCard(self):
-        return self._pile[len(self._pile-1)]
+        if len(self._pile) > 0:
+            return self._pile[len(self._pile)-1]
+        return None
 
     def canPlay(self, card):
         """ Validate whether the given card can be played on the pile.
@@ -182,7 +201,22 @@ class TomaccoPile(object):
             :return: :py:func:`bool` True if the card can be played on this pile,
             otherwise False.
         """
+        if not self.getTopCard():
+            return True
         return card.beats(self.getTopCard())
+
+    def play(self, card):
+        """ Play a card on the top of the pile.
+
+            :param card: The card to play.
+            :type card: :py:class:`logic.TomaccoCard`
+        """
+        self._pile.append(card)
+
+    def pickUp(self):
+        cards =  self._pile[:]
+        self._pile = []
+        return cards
 
 class TomaccoGame(object):
     """ Represents a game of tomacco.
@@ -198,6 +232,11 @@ class TomaccoGame(object):
         self.players = players
         for player in players:
             player.game = self
+        # TODO: choose the starting player as the player to the right of the dealer.
+        self.currentPlayer = random.choice(self.players)
+
+    def start(self):
+        self.deal()
 
     def _validateArgs(self, players, decks):
         """ Validates the args
@@ -219,14 +258,17 @@ class TomaccoGame(object):
         return players, decks
 
     def deal(self):
-        numInHand = 6*len(self.players)
-        numFaceDown = 3*len(self.players)
+        # TODO: pick a dealer randomly, deal starting to the right of the dealer.
+        numInHand = 6
+        numFaceDown = 3
 
         hands = [TomaccoHand() for i in range(len(self.players))]
 
         for i in range(numInHand):
             for hand in hands:
-                hand.cardsInHand.append(self.deck.removeTopCard())
+                card = self.deck.removeTopCard()
+                print card.value
+                hand.cardsInHand.append(card)
 
         for i in range(numFaceDown):
             for hand in hands:
@@ -234,6 +276,30 @@ class TomaccoGame(object):
 
         for player, hand in zip(self.players, hands):
             player.hand = hand
+
+    def getNextPlayer(self):
+        return self.currentPlayer
+
+    def pickUp(self):
+        """ Remove and return the top card off the deck.
+
+            :return: (:py:class:`TomaccoCard`) The top card off the deck.
+        """
+        return self.deck.removeTopCard()
+
+    def pickUpPile(self):
+        self._incrementPlayer()
+        return self.activePile.pickUp()
+
+    def playCard(self, player, card):
+        if not self.canPlay(card):
+            raise Exception("Player attempted to play a card that cannot be played.")
+        self.activePile.play(card)
+        self._incrementPlayer()
+
+    def _incrementPlayer(self):
+        nextIndex = (self.players.index(self.currentPlayer)+1) % len(self.players)
+        self.currentPlayer = self.players[nextIndex]
 
     def canPlay(self, card):
         """ Validate whether the given card can be played.
