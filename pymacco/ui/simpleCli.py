@@ -1,5 +1,5 @@
-from base import BaseUi, start
-from player.player import Player
+from pymacco.ui.base import BaseUi, start
+from pymacco.player.player import Player
 
 class SimpleCli(BaseUi):
     

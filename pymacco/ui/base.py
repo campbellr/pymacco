@@ -1,8 +1,8 @@
 """ This module provides a base implementation for UI's that all UI's
     should extend.
 """
-from util import GameOverException
-from logic import TomaccoGame
+from pymacco.util import GameOverException
+from pymacco.logic import TomaccoGame
 
 class BaseUi(object):
     """ Provides a base implementation of a UI that all UI's must follow.

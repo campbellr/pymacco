@@ -1,9 +1,9 @@
 """ This module contains the logic the artificial opponents
 """
 import random
-from player.player import Player
+from pymacco.player.player import Player
 
-from util import GameOverException
+from pymacco.util import GameOverException
 
 class AIPlayer(object):
     def __init__(self, name):

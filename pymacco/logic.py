@@ -2,8 +2,8 @@
 """
 import random
 
-from player.player import Player
-import rules
+from pymacco.player.player import Player
+import pymacco.rules as rules
 
 class Card(object):
     """ Representation of a single card.
