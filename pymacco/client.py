@@ -8,6 +8,18 @@ from zope.interface import implements
 from pymacco.interfaces import ISubject
 
 
+def requireConnect(func):
+    """ A decorator that raises an exception if 'self.connected' is False.
+    """
+    def wrapped(self, *args, **kwargs):
+        if not self.connected:
+            raise Exception("You must be connected before using '%s'" %
+                    func.__name__)
+        func(self, *args, **kwargs)
+
+    return wrapped
+
+
 class PymaccoClient(object):
     """ The interface to a pymacco server.
     """
@@ -15,6 +27,7 @@ class PymaccoClient(object):
 
     def __init__(self):
         self.listeners = []
+        self.connected = False
         self.factory = pb.PBClientFactory()
 
     def attach(self, listener):
@@ -29,10 +42,13 @@ class PymaccoClient(object):
 
     def connect(self, host, port):
         reactor.connectTCP(host, port, self.factory)
+        self.connected = True
 
     def disconnect(self):
         self.factory.disconnect()
+        self.connected = False
 
+    @requireConnect
     def login(self, username, password):
         def connectedAsUser(avatar):
             """Actions to perform when connection succeeds."""
@@ -46,6 +62,7 @@ class PymaccoClient(object):
         d.addCallback(connectedAsUser)
         return d
 
+    @requireConnect
     def register(self, username, password):
         """Register user account on connected server."""
 
