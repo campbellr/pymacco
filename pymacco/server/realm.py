@@ -1,6 +1,5 @@
 from twisted.cred import checkers, portal
 from twisted.spread import pb
-from twisted.python import log
 
 from zope.interface import implements
 
@@ -13,10 +12,8 @@ class Realm(object):
     def requestAvatar(self, avatarID, mind, *interfaces):
         assert pb.IPerspective in interfaces
         if avatarID == checkers.ANONYMOUS:
-            log.msg("Received request for AnonymousUser")
             return pb.IPerspective, AnonymousUser(), lambda: None
         else:
-            log.msg("Received request for RegisteredUser(%s)" % avatarID)
             avatar = RegisteredUser(avatarID)
             avatar.attached(mind)
-            return pb.IPerspective, avatar, lambda: None
+            return pb.IPerspective, avatar, lambda a=avatar: a.detached(mind)
