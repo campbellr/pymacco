@@ -3,6 +3,8 @@ import traceback
 from twisted.internet import reactor
 from twisted.protocols import basic
 
+DEBUG = True
+
 
 class BaseCommandProcessor(basic.LineReceiver):
     """ Protocol that implements something similar to `cmd.Cmd` for Twisted.
@@ -48,9 +50,16 @@ class BaseCommandProcessor(basic.LineReceiver):
         else:
             try:
                 method(*args)
+            except TypeError, e:
+                if "%s() takes exactly" % method.__name__ in str(e):
+                    self.sendLine("Invalid parameters for '%s'.\n"
+                    "Run 'help %s' for proper usage." % (command, command))
+                self.transport.write(self.prompt)
             except Exception, e:
                 self.sendLine('Error: ' + str(e))
-                self.sendLine(traceback.format_exc())
+                if DEBUG:
+                    self.sendLine(traceback.format_exc())
+                self.transport.write(self.prompt)
 
 
 class ExtendedCommandProcessor(BaseCommandProcessor):
@@ -65,7 +74,7 @@ class ExtendedCommandProcessor(BaseCommandProcessor):
                         if cmd.startswith('do_')]
             self.sendLine('Valid commands: ' + ' '.join(commands))
 
-        self.sendLine(self.prompt)
+        self.transport.write(self.prompt)
 
     def do_quit(self):
         """quit: Quit this session"""
