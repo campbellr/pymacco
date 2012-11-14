@@ -2,16 +2,36 @@
 import sys
 
 from twisted.internet import reactor
+from twisted.python import usage
 from twisted.python import log
 
 from pymacco.server import factory
 
-PORT = 8777
+DEFAULT_PORT = 8777
+
+
+class Options(usage.Options):
+    optParameters = [
+            ["port", "p", DEFAULT_PORT, "The port to listen on."],
+    ]
+
+
+def parseOptions():
+    config = Options()
+    try:
+        config.parseOptions()
+    except usage.UsageError, e:
+        print "%s: %s" % (sys.argv[0], e)
+        print "%s: Try --help for usage details." % sys.argv[0]
+        sys.exit(1)
+
+    return config
 
 
 def main():
+    config = parseOptions()
     log.startLogging(sys.stdout)
-    reactor.listenTCP(PORT, factory)
+    reactor.listenTCP(config['port'], factory)
     reactor.run()
 
 
