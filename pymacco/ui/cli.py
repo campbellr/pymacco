@@ -94,7 +94,6 @@ class PymaccoClientCommandProcessor(ExtendedCommandProcessor):
     def do_connect(self, hostname, port=8777):
         """connect <hostname> <port>: Connect to the given server.
         """
-        print hostname, port
         self.client.connect(hostname, int(port))
         self.sendLine("Connected to %s." % hostname)
         self.transport.write(self.prompt)
