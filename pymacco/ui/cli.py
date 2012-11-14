@@ -103,7 +103,7 @@ class PymaccoClientCommandProcessor(ExtendedCommandProcessor):
         """
         host = self.client.host
         self.client.disconnect()
-        self.sendLine("Disconnected from %" % host)
+        self.sendLine("Disconnected from %s" % host)
         self.transport.write(self.prompt)
 
     def do_register(self, username, password):
