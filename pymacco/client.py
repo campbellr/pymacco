@@ -15,7 +15,7 @@ def requireConnect(func):
         if not self.connected:
             raise Exception("You must be connected before using '%s'" %
                     func.__name__)
-        func(self, *args, **kwargs)
+        return func(self, *args, **kwargs)
 
     return wrapped
 
@@ -28,6 +28,8 @@ class PymaccoClient(object):
     def __init__(self):
         self.listeners = []
         self.connected = False
+        self.host = None
+        self.port = None
         self.factory = pb.PBClientFactory()
 
     def attach(self, listener):
@@ -43,10 +45,14 @@ class PymaccoClient(object):
     def connect(self, host, port):
         reactor.connectTCP(host, port, self.factory)
         self.connected = True
+        self.host = host
+        self.port = port
 
     def disconnect(self):
         self.factory.disconnect()
         self.connected = False
+        self.host = None
+        self.port = None
 
     @requireConnect
     def login(self, username, password):
@@ -55,6 +61,9 @@ class PymaccoClient(object):
             self.avatar = avatar
             self.username = username
             self.notify('loggedIn', username)
+
+        def loginFailed(reason):
+            self.notify('loginFailed', username)
 
         hash_ = sha1(password).hexdigest()
         creds = credentials.UsernamePassword(username, hash_)

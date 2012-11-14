@@ -15,5 +15,5 @@ class Realm(object):
             return pb.IPerspective, AnonymousUser(), lambda: None
         else:
             avatar = RegisteredUser(avatarID)
-            avatar.attached(mind)
-            return pb.IPerspective, avatar, lambda a=avatar: a.detached(mind)
+            avatar.attached()
+            return pb.IPerspective, avatar, lambda a=avatar: a.detached()

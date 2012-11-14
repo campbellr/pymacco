@@ -3,6 +3,8 @@ import traceback
 from twisted.internet import reactor
 from twisted.protocols import basic
 
+import pymacco
+
 DEBUG = True
 
 
@@ -25,7 +27,8 @@ class BaseCommandProcessor(basic.LineReceiver):
         self.factory = factory
 
     def connectionMade(self):
-        self.sendLine("Pymacco client console. Type 'help' for help.")
+        self.sendLine("Pymacco (version: %s)" % pymacco.getVersionString())
+        self.sendLine("Type 'help' for a list of available commands.")
         self.transport.write(self.prompt)
 
     def connectionLost(self, reason):
@@ -35,6 +38,7 @@ class BaseCommandProcessor(basic.LineReceiver):
 
     def lineReceived(self, line):
         if not line:
+            self.transport.write(self.prompt)
             return
 
         commandParts = line.split()
@@ -47,14 +51,15 @@ class BaseCommandProcessor(basic.LineReceiver):
             method = getattr(self, 'do_' + command)
         except AttributeError, e:
             self.sendLine('Error: No such command.')
+            self.transport.write(self.prompt)
         else:
             try:
                 method(*args)
             except TypeError, e:
-                if "%s() takes exactly" % method.__name__ in str(e):
+                if "%s() takes" % method.__name__ in str(e):
                     self.sendLine("Invalid parameters for '%s'.\n"
                     "Run 'help %s' for proper usage." % (command, command))
-                self.transport.write(self.prompt)
+                    self.transport.write(self.prompt)
             except Exception, e:
                 self.sendLine('Error: ' + str(e))
                 if DEBUG:
@@ -86,11 +91,20 @@ class PymaccoClientCommandProcessor(ExtendedCommandProcessor):
     def __init__(self, client):
         self.client = client
 
-    def do_connect(self, hostname, port):
+    def do_connect(self, hostname, port=8777):
         """connect <hostname> <port>: Connect to the given server.
         """
+        print hostname, port
         self.client.connect(hostname, int(port))
-        self.sendLine("Connected.")
+        self.sendLine("Connected to %s." % hostname)
+        self.transport.write(self.prompt)
+
+    def do_disconnect(self):
+        """ disconnect: Disconnect from the current server.
+        """
+        host = self.client.host
+        self.client.disconnect()
+        self.sendLine("Disconnected from %" % host)
         self.transport.write(self.prompt)
 
     def do_register(self, username, password):
