@@ -1,9 +1,19 @@
 #!/usr/bin/env python
 import sys
+from os.path import dirname
 
 from twisted.internet import reactor
 from twisted.python import usage
 from twisted.python import log
+
+try:
+    import pymacco
+except ImportError:
+    # We're running inside the repo...
+    projectDir = dirname(dirname(__file__))
+    sys.path.insert(0, projectDir)
+else:
+    del pymacco # NOQA
 
 from pymacco.server import factory
 

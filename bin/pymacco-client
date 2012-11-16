@@ -6,10 +6,18 @@
 """
 import sys
 from optparse import OptionParser
+from os.path import dirname
 
 from twisted.internet import stdio, reactor
 
-import pymacco
+try:
+    import pymacco
+except ImportError:
+    # We're running inside the repo...
+    projectDir = dirname(dirname(__file__))
+    sys.path.insert(0, projectDir)
+    import pymacco # NOQA
+
 from pymacco.ui.cli import PymaccoClientCommandProcessor
 from pymacco.client import PymaccoClient
 
