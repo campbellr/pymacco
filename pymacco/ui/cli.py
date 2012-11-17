@@ -21,15 +21,18 @@ class BaseCommandProcessor(basic.LineReceiver):
 
     """
     delimiter = '\n'
-    prompt = '>>> '
+    _prompt = '>>> '
 
     def __init__(self, factory):
         self.factory = factory
 
+    def prompt(self):
+        self.transport.write(self._prompt)
+
     def connectionMade(self):
         self.sendLine("Pymacco (version: %s)" % pymacco.getVersionString())
         self.sendLine("Type 'help' for a list of available commands.")
-        self.transport.write(self.prompt)
+        self.prompt()
 
     def connectionLost(self, reason):
         self.sendLine("Connection lost")
@@ -38,7 +41,7 @@ class BaseCommandProcessor(basic.LineReceiver):
 
     def lineReceived(self, line):
         if not line:
-            self.transport.write(self.prompt)
+            self.prompt()
             return
 
         commandParts = line.split()
@@ -51,7 +54,7 @@ class BaseCommandProcessor(basic.LineReceiver):
             method = getattr(self, 'do_' + command)
         except AttributeError, e:
             self.sendLine('Error: No such command.')
-            self.transport.write(self.prompt)
+            self.prompt()
         else:
             try:
                 method(*args)
@@ -59,12 +62,12 @@ class BaseCommandProcessor(basic.LineReceiver):
                 if "%s() takes" % method.__name__ in str(e):
                     self.sendLine("Invalid parameters for '%s'.\n"
                     "Run 'help %s' for proper usage." % (command, command))
-                    self.transport.write(self.prompt)
+                    self.prompt()
             except Exception, e:
                 self.sendLine('Error: ' + str(e))
                 if DEBUG:
                     self.sendLine(traceback.format_exc())
-                self.transport.write(self.prompt)
+                self.prompt()
 
 
 class ExtendedCommandProcessor(BaseCommandProcessor):
@@ -79,7 +82,7 @@ class ExtendedCommandProcessor(BaseCommandProcessor):
                         if cmd.startswith('do_')]
             self.sendLine('Valid commands: ' + ' '.join(commands))
 
-        self.transport.write(self.prompt)
+        self.prompt()
 
     def do_quit(self):
         """quit: Quit this session"""
@@ -96,7 +99,7 @@ class PymaccoClientCommandProcessor(ExtendedCommandProcessor):
         """
         self.client.connect(hostname, int(port))
         self.sendLine("Connected to %s." % hostname)
-        self.transport.write(self.prompt)
+        self.prompt()
 
     def do_disconnect(self):
         """ disconnect: Disconnect from the current server.
@@ -104,7 +107,7 @@ class PymaccoClientCommandProcessor(ExtendedCommandProcessor):
         host = self.client.host
         self.client.disconnect()
         self.sendLine("Disconnected from %s" % host)
-        self.transport.write(self.prompt)
+        self.prompt()
 
     def do_register(self, username, password):
         """register <username> <password>: Register the given
@@ -115,28 +118,36 @@ class PymaccoClientCommandProcessor(ExtendedCommandProcessor):
         """
         def registerSuccess(avatar):
             self.sendLine("Successfully registered.")
-            self.transport.write(self.prompt)
+            self.prompt()
 
-        def registerFailed(reasons):
-            self.sendLine("Registration failed.")
-            self.transport.write(self.prompt)
+        def registerFailed(failure):
+            self.sendLine("Registration failed: %s" % \
+                    failure.getErrorMessage())
+            self.prompt()
 
         d = self.client.register(username, password)
         d.addCallback(registerSuccess)
         d.addErrback(registerFailed)
 
     def do_login(self, username, password):
-        """login <username> <password>: log into the current server with
+        """login <username> <password>: Log into the current server with
             the given username/password.
         """
         def loginSuccess(avatar):
             self.sendLine("Successfully logged in.")
-            self.transport.write(self.prompt)
+            self.prompt()
 
-        def loginFailed(reasons):
-            self.sendLine("Login failed.")
-            self.transport.write(self.prompt)
+        def loginFailed(failure):
+            self.sendLine("Login failed: %s" % failure.getTraceback())
+            self.prompt()
 
         d = self.client.login(username, password)
         d.addCallback(loginSuccess)
         d.addErrback(loginFailed)
+
+    def do_users(self):
+        """ users: List the logged-in users.
+        """
+        users = "\n".join(self.client.users)
+        self.sendLine(users)
+        self.prompt()

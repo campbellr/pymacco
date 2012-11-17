@@ -1,8 +1,9 @@
 from twisted.spread import pb
 from twisted.python import log
 
-
-from pymacco.server import checker
+from pymacco.server import checker, state
+from pymacco.common.table import LocalTable
+from pymacco.common.errors import DeniedRequest
 
 
 class AnonymousUser(pb.Avatar):
@@ -18,33 +19,53 @@ class AnonymousUser(pb.Avatar):
 class RegisteredUser(pb.Avatar):
     def __init__(self, name):
         self.name = name
+        self.joinedTables = {}
 
     def attached(self):
         """ Called (by the Realm) when connected.
         """
         log.msg("User %s connected" % self.name)
+        state.onlineUsers.userLogin(self)
 
     def detached(self):
         """ Called (by the Realm) when disconected.
         """
         log.msg("User %s disconnected" % self.name)
+        state.onlineUsers.userLogout(self)
 
-    def perspective_getGames(self):
-        """ Return the list of games on this server.
+    def perspective_getTables(self):
+        """ Return the list of tables on this server.
         """
-        pass
+        return state.availableTables
 
     def perspective_getUsers(self):
         """ Return the list of users on this server
         """
-        pass
+        return state.onlineUsers
 
-    def perspective_joinGame(self, gameID):
-        """ Join the game with the given `gameID`
+    def perspective_createTable(self, tableID):
+        """ Create a table with the given `tableID`.
         """
-        pass
+        table = LocalTable(tableID)
+        # Provide table instance with a means of closing itself.
+        table.close = lambda: state.availableTables.closeTable(table)
+        state.availableTables.openTable(table)
+        return table
 
-    def perspective_leaveGame(self, gameID):
-        """ Leave the game with the given `gameID`
+    def perspective_joinTable(self, tableID):
+        """ Join the table with the given `tableID`
         """
-        pass
+        try:
+            table = state.availableTables[tableID]
+        except KeyError:
+            raise DeniedRequest("No table with name '%s' exist." % tableID)
+
+        self.joinedTables[tableID] = table
+
+    def perspective_leaveTable(self, tableID):
+        """ Leave the table with the given `tableID`
+        """
+        if tableID not in self.joinedTables:
+            raise DeniedRequest("Not joined table '%s'" % tableID)
+
+        del self.joinedTables[tableID]

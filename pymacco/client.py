@@ -7,6 +7,14 @@ from zope.interface import implements
 
 from pymacco.interfaces import ISubject
 
+from pymacco.common.user import LocalUserManager, RemoteUserManager
+from pymacco.common.table import LocalTable, RemoteTable, LocalTableManager, \
+                                 RemoteTableManager
+
+pb.setUnjellyableForClass(LocalTable, RemoteTable)
+pb.setUnjellyableForClass(LocalTableManager, RemoteTableManager)
+pb.setUnjellyableForClass(LocalUserManager, RemoteUserManager)
+
 
 def requireConnect(func):
     """ A decorator that raises an exception if 'self.connected' is False.
@@ -30,6 +38,8 @@ class PymaccoClient(object):
         self.connected = False
         self.host = None
         self.port = None
+        self.users = []
+        self.tables = []
         self.factory = pb.PBClientFactory()
 
     def attach(self, listener):
@@ -54,6 +64,10 @@ class PymaccoClient(object):
         self.host = None
         self.port = None
 
+    def errback(self, failure):
+        print "\n\nError: %s" % failure.getErrorMessage()
+        print "Traceback: %s" % failure.getTraceback()
+
     @requireConnect
     def login(self, username, password):
         def connectedAsUser(avatar):
@@ -62,13 +76,27 @@ class PymaccoClient(object):
             self.username = username
             self.notify('loggedIn', username)
 
+            def gotUsers(users):
+                self.users = users
+                self.notify('gotUsers', users)
+
+            def gotTables(tables):
+                self.tables = tables
+                self.notify('gotTables', tables)
+
+            d = avatar.callRemote('getTables')
+            d.addCallbacks(gotTables, self.errback)
+
+            d = avatar.callRemote('getUsers')
+            d.addCallbacks(gotUsers, self.errback)
+
         def loginFailed(reason):
             self.notify('loginFailed', username)
 
         hash_ = sha1(password).hexdigest()
         creds = credentials.UsernamePassword(username, hash_)
         d = self.factory.login(creds, client=None)
-        d.addCallback(connectedAsUser)
+        d.addCallbacks(connectedAsUser, self.errback)
         return d
 
     @requireConnect
@@ -85,3 +113,12 @@ class PymaccoClient(object):
         d = self.factory.login(anon, client=None)
         d.addCallback(connectedAsAnonymousUser)
         return d
+
+    def joinTable(self, tableID):
+        def joinedTable(table):
+            self.tables[tableID] = table
+            self.notify('joinedTable', tableID, table)
+            return table
+
+        d = self.avatar.callRemote('joinTable', tableID)
+        d.addCallback(joinedTable)
