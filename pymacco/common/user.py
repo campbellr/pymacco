@@ -14,11 +14,10 @@ class LocalUserManager(LocalRoster):
 
 class RemoteUserManager(RemoteRoster):
 
-    def observe_userLogin(self, username, info):
-        self[username] = info
+    def observe_userLogin(self, username):
+        self[username] = None
         self.notify('userLogin', username=username)
 
     def observe_userLogout(self, username):
         del self[username]
         self.notify('userLogout', username=username)
-
