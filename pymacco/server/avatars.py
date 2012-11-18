@@ -63,6 +63,7 @@ class RegisteredUser(pb.Avatar):
 
         self.joinedTables[tableID] = table
         log.msg("User '%s' joined table '%s'" % (self.name, tableID))
+        return table
 
     def perspective_leaveTable(self, tableID):
         """ Leave the table with the given `tableID`
