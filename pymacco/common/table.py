@@ -5,23 +5,60 @@ from zope.interface import implements
 
 from pymacco.interfaces import ISubject, IListener
 from pymacco.common.roster import LocalRoster, RemoteRoster
-from pymacco.common.errors import DeniedRequest
+from pymacco.common.errors import DeniedRequest, GameError
+
+
+class Player(pb.Referenceable):
+
+    def __init__(self, game):
+        self._game = game
+
+    def getHand(self):
+        return self._game.getHand(self)
+
+    def playCard(self, card):
+        return self._game.playCard(self, card)
+
+    remote_getHand = getHand
+    remote_playCard = playCard
 
 
 # Temporary mock game class for testing
 class PymaccoGame(object):
 
+    implements(ISubject)
+
     def __init__(self):
-        self.players = []
+        self.listeners = []
+        self.players = {}
+
+    def attach(self, listener):
+        self.listeners.append(listener)
+
+    def detach(self, listener):
+        self.listeners.remove(listener)
+
+    def notify(self, event, *args, **kwargs):
+        for listener in self.listeners:
+            listener.update(event, *args, **kwargs)
+
+    def start(self):
+        if self.inProgress():
+            raise GameError("Game in progress")
 
     def getState(self):
         pass
 
     def addPlayer(self, name):
-        self.players.append(name)
+        self.players[name] = Player(self)
+        self.notify('addPlayer', name)
 
     def removePlayer(self, name):
-        self.players.remove(name)
+        del self.players[name]
+        self.notify('removePlayer', name)
+
+    def playCard(self, player, card):
+        pass
 
 
 class LocalTable(pb.Cacheable):
