@@ -63,6 +63,8 @@ class PymaccoClient(object):
         self.connected = False
         self.host = None
         self.port = None
+        self.users = []
+        self.tables = []
 
     def errback(self, failure):
         print "\n\nError: %s" % failure.getErrorMessage()
@@ -114,11 +116,29 @@ class PymaccoClient(object):
         d.addCallback(connectedAsAnonymousUser)
         return d
 
+    def createTable(self, tableID):
+        """ Create a new table with the given `tableID`"""
+        def createdTable(table):
+            self.tables[tableID] = table
+            self.notify('createdTable', tableID)
+            return table
+
+        d = self.avatar.callRemote('createTable', tableID)
+        d.addCallback(createdTable)
+
     def joinTable(self, tableID):
         def joinedTable(table):
-            self.tables[tableID] = table
             self.notify('joinedTable', tableID, table)
             return table
 
         d = self.avatar.callRemote('joinTable', tableID)
         d.addCallback(joinedTable)
+
+    def leaveTable(self, tableID):
+        def leftTable(self):
+            del self.tables[tableID]
+            self.notify('leftTable', tableID)
+
+        d = self.avatar.callRemote('leaveTable', tableID)
+        d.addCallbacks(leftTable, self.errback)
+        return d

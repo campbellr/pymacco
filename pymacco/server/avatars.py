@@ -50,6 +50,7 @@ class RegisteredUser(pb.Avatar):
         # Provide table instance with a means of closing itself.
         table.close = lambda: state.availableTables.closeTable(table)
         state.availableTables.openTable(table)
+        log.msg("User '%s' created table '%s'" % (self.name, tableID))
         return table
 
     def perspective_joinTable(self, tableID):
@@ -61,6 +62,7 @@ class RegisteredUser(pb.Avatar):
             raise DeniedRequest("No table with name '%s' exist." % tableID)
 
         self.joinedTables[tableID] = table
+        log.msg("User '%s' joined table '%s'" % (self.name, tableID))
 
     def perspective_leaveTable(self, tableID):
         """ Leave the table with the given `tableID`
@@ -69,3 +71,4 @@ class RegisteredUser(pb.Avatar):
             raise DeniedRequest("Not joined table '%s'" % tableID)
 
         del self.joinedTables[tableID]
+        log.msg("User '%s' left table '%s'" % (self.name, tableID))
