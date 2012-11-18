@@ -2,8 +2,9 @@
 """
 import random
 
-from pymacco.player.player import Player
+from pymacco import util
 import pymacco.rules as rules
+
 
 class Card(object):
     """ Representation of a single card.
@@ -33,44 +34,48 @@ class Card(object):
 
         # 2 of Clubs < 3 of Clubs from the values.
         # 2 of Clubs < 2 of Spades from the suits.
-        # Arbitrarly decide that suits are more important, making the default sort by suit of
+        # Arbitrarly decide that suits are more important, making the default
+        # sort by suit of
         # increasing values.
-        thisCard = (self.suits.index(self.suit), self.values.index(self.value))
-        otherCard = (self.suits.index(card.suit), self.values.index(card.value))
+        thisCard = (self.suits.index(self.suit),
+                    self.values.index(self.value))
+        otherCard = (self.suits.index(card.suit),
+                     self.values.index(card.value))
 
         return cmp(thisCard, otherCard)
 
     def __hash__(self):
         return hash((self.suit, self.value))
 
+
 class TomaccoCard(Card):
     """ A card specifically for use in tomacco
     """
-    clear_cards = ['10', 'Ace']
-    reset_cards = ['2']
-    wild_cards = ['2', '10']
+    clearCards = ['10', 'Ace']
+    resetCards = ['2']
+    wildCards = ['2', '10']
 
-    def is_reset(self):
+    def clearCards(self):
         """ Return whether or not the card is a 'reset card'.
 
             A 'reset card' is a card that resets the count of the cards on
             the table.
         """
-        return self.value in self.reset_cards
+        return self.value in self.resetCards
 
-    def is_clear(self):
+    def isClear(self):
         """ Return whether or not the card is a 'clear card'.
 
             A 'clear card' will clear existing cards on the table.
         """
-        return self.value in self.clear_cards
+        return self.value in self.clearCards
 
-    def is_wild(self):
+    def isWild(self):
         """ Return whether or not the card is a 'wild card'.
 
             A 'wild card' can be played at any time.
         """
-        return self.value in self.wild_cards
+        return self.value in self.wildCards
 
     def __cmp__(self, other):
         """ Arbitrarly, say that a return > 0 = card is a valid play.
@@ -80,10 +85,11 @@ class TomaccoCard(Card):
             Example - get valid cards in hand:
                 validCards = [card for card in myHand if card > pile.topCard]
         """
-        if not isinstance(other, TomaccoCard):
-            raise TypeError("Cannot compare a %s to a TomaccoCard." % type(other))
+        if not isinstance(other, type(self)):
+            raise TypeError("Cannot compare a %s to %s" % (type(other),
+                type(self)))
 
-        if self.is_wild():
+        if self.isWild():
             return 1
 
         thisCard = self.values.index(self.value)
@@ -101,19 +107,20 @@ class TomaccoCard(Card):
         """
         return self > card
 
+
 class Deck(object):
     """ Representation of a single deck of cards.
     """
-    def __init__(self, card_cls=Card, cards=None):
-        self.card_cls = card_cls
+    def __init__(self, cardCls=Card, cards=None):
+        self.cardCls = cardCls
         if cards:
             # TODO: should I be validating this?
             self.cards = cards
         else:
             self.cards = []
-            for suit in self.card_cls.suits:
-                for value in self.card_cls.values:
-                    self.cards.append(self.card_cls(suit, value))
+            for suit in self.cardCls.suits:
+                for value in self.cardCls.values:
+                    self.cards.append(self.cardCls(suit, value))
 
     def shuffle(self):
         """ Shuffle the deck.
@@ -144,6 +151,7 @@ class Deck(object):
     def __isub__(self, other):
         self.cards += other.cards
         return self
+
 
 class TomaccoHand(object):
     def __init__(self):
@@ -183,13 +191,14 @@ class TomaccoHand(object):
         else:
             self.cardsInHand.append(cards)
 
+
 class TomaccoPile(object):
     def __init__(self):
         self._pile = []
 
     def getTopCard(self):
         if len(self._pile) > 0:
-            return self._pile[len(self._pile)-1]
+            return self._pile[len(self._pile) - 1]
         return None
 
     def canPlay(self, card):
@@ -214,25 +223,27 @@ class TomaccoPile(object):
         self._pile.append(card)
 
     def pickUp(self):
-        cards =  self._pile[:]
+        cards = self._pile[:]
         self._pile = []
         return cards
+
 
 class TomaccoGame(object):
     """ Represents a game of tomacco.
     """
     def __init__(self, players, decks=None):
         players, decks = self._validateArgs(players, decks)
-        self.deck = Deck(card_cls=TomaccoCard)
+        self.deck = Deck(cardCls=TomaccoCard)
         for i in range(decks - 1):
-            self.deck += Deck(card_cls=TomaccoCard)
+            self.deck += Deck(cardCls=TomaccoCard)
         self.deck.shuffle()
 
         self.activePile = TomaccoPile()
         self.players = players
         for player in players:
             player.game = self
-        # TODO: choose the starting player as the player to the right of the dealer.
+        # TODO: Choose the starting player as the player to the right of the
+        #       dealer.
         self.currentPlayer = random.choice(self.players)
 
     def start(self):
@@ -241,12 +252,7 @@ class TomaccoGame(object):
     def _validateArgs(self, players, decks):
         """ Validates the args
         """
-        if not isinstance(players, list) and not \
-               isinstance(players, basestring) and getattr(players, '__iter__', False):
-            # iterable that isn't a string or list, convert directly.
-            players = list(players)
-        elif not isinstance(players, list):
-            players = [players]
+        players = util.iterable(players)
 
         if len(players) < 2:
             raise ValueError("A Minimum of two players are required to play Tomacco")
@@ -293,12 +299,13 @@ class TomaccoGame(object):
 
     def playCard(self, player, card):
         if not self.canPlay(card):
-            raise Exception("Player attempted to play a card that cannot be played.")
+            raise Exception("Player attempted to play a card that "
+                            "cannot be played.")
         self.activePile.play(card)
         self._incrementPlayer()
 
     def _incrementPlayer(self):
-        nextIndex = (self.players.index(self.currentPlayer)+1) % len(self.players)
+        nextIndex = (self.players.index(self.currentPlayer) + 1) % len(self.players)
         self.currentPlayer = self.players[nextIndex]
 
     def canPlay(self, card):
