@@ -69,6 +69,7 @@ class PymaccoClient(object):
     def errback(self, failure):
         print "\n\nError: %s" % failure.getErrorMessage()
         print "Traceback: %s" % failure.getTraceback()
+        return failure
 
     @requireConnect
     def login(self, username, password):
@@ -113,18 +114,21 @@ class PymaccoClient(object):
 
         anon = credentials.Anonymous()
         d = self.factory.login(anon, client=None)
-        d.addCallback(connectedAsAnonymousUser)
+        d.addCallbacks(connectedAsAnonymousUser, self.errback)
         return d
 
     def createTable(self, tableID):
         """ Create a new table with the given `tableID`"""
         def createdTable(table):
+            print 'foo'
             self.tables[tableID] = table
             self.notify('createdTable', tableID)
+            print 'bar'
             return table
 
         d = self.avatar.callRemote('createTable', tableID)
-        d.addCallback(createdTable)
+        d.addCallbacks(createdTable, self.errback)
+        return d
 
     def joinTable(self, tableID):
         def joinedTable(table):
@@ -132,10 +136,11 @@ class PymaccoClient(object):
             return table
 
         d = self.avatar.callRemote('joinTable', tableID)
-        d.addCallback(joinedTable)
+        d.addCallbacks(joinedTable, self.errback)
+        return d
 
     def leaveTable(self, tableID):
-        def leftTable(self):
+        def leftTable(table):
             del self.tables[tableID]
             self.notify('leftTable', tableID)
 

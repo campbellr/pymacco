@@ -158,8 +158,8 @@ class PymaccoClientCommandProcessor(ExtendedCommandProcessor):
             self.do_join_table(name)
 
         d = self.client.createTable(name)
-        d.addCallback(createSuccess)
-        d.addCallback(join)
+        d.addCallbacks(createSuccess, self.errback)
+        #d.addCallback(join)
 
     def do_join_table(self, name):
         """ join table <name>: Join the table with the given name.
@@ -173,7 +173,7 @@ class PymaccoClientCommandProcessor(ExtendedCommandProcessor):
     def do_leave_table(self, name):
         """ leave table <name>: Leave the table with the given name.
         """
-        def leaveSuccess():
+        def leaveSuccess(table):
             self.sendLine("Left table '%s'" % name)
 
         d = self.client.leaveTable(name)
