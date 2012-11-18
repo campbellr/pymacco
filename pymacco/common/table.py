@@ -131,8 +131,8 @@ class LocalTable(pb.Cacheable):
         for observer in self.observers.values():
             self.notifyObserver(observer, event, *args, **kwargs)
 
-    def notifyObserver(self, observer, event, *args, **kwargs):
-        reactor.callLater(0, observer.callRemote, event, *args, **kwargs)
+    def notifyObserver(self, obs, event, *args, **kwargs):
+        reactor.callLater(0, obs.callRemote, event, *args, **kwargs)
 
     def update(self, event, *args, **kwargs):
         for observer in self.observers.values():
