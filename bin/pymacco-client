@@ -9,6 +9,7 @@ from optparse import OptionParser
 from os.path import dirname
 
 from twisted.internet import stdio, reactor
+from twisted.python import log
 
 try:
     import pymacco
@@ -32,6 +33,7 @@ def parseArgs(args):
 
 def main(args):
     opts, args = parseArgs(args)
+    log.startLogging(sys.stdout)
     # TODO: pull this ui-specific code into a `pymacco.ui.run` method
     #       or something
     client = PymaccoClient()

@@ -3,17 +3,19 @@ from hashlib import sha1
 from twisted.internet import reactor
 from twisted.spread import pb
 from twisted.cred import credentials
+from twisted.python import log
 from zope.interface import implements
 
 from pymacco.interfaces import ISubject
 
 from pymacco.common.user import LocalUserManager, RemoteUserManager
-from pymacco.common.table import LocalTable, RemoteTable, LocalTableManager, \
-                                 RemoteTableManager
-
-pb.setUnjellyableForClass(LocalTable, RemoteTable)
-pb.setUnjellyableForClass(LocalTableManager, RemoteTableManager)
 pb.setUnjellyableForClass(LocalUserManager, RemoteUserManager)
+
+from pymacco.common.table import LocalTable, RemoteTable
+pb.setUnjellyableForClass(LocalTable, RemoteTable)
+
+from pymacco.common.tablemanager import LocalTableManager, RemoteTableManager
+pb.setUnjellyableForClass(LocalTableManager, RemoteTableManager)
 
 
 def requireConnect(func):
@@ -41,6 +43,20 @@ class PymaccoClient(object):
         self.users = []
         self.tables = []
         self.factory = pb.PBClientFactory()
+        self.factory.clientConnectionLost = self.connectionLost
+
+    def connectionLost(self, connector, reason):
+        log.msg("Lost connection to server")
+        if self.avatar:
+            self.avatar = None
+            self.connected = False
+            self.host = None
+            self.port = None
+            self.users = []
+            self.tables = []
+
+        self.notify('loggedOut')
+        log.msg("Lost connection: %s" % reason.getErrorMessage())
 
     def attach(self, listener):
         self.listeners.append(listener)
@@ -60,15 +76,10 @@ class PymaccoClient(object):
 
     def disconnect(self):
         self.factory.disconnect()
-        self.connected = False
-        self.host = None
-        self.port = None
-        self.users = []
-        self.tables = []
 
     def errback(self, failure):
-        print "\n\nError: %s" % failure.getErrorMessage()
-        print "Traceback: %s" % failure.getTraceback()
+        log.msg("\n\nError: %s" % failure.getErrorMessage())
+        log.msg("Traceback: %s" % failure.getTraceback())
         return failure
 
     @requireConnect
@@ -120,14 +131,13 @@ class PymaccoClient(object):
     def createTable(self, tableID):
         """ Create a new table with the given `tableID`"""
         def createdTable(table):
-            print 'foo'
             self.tables[tableID] = table
             self.notify('createdTable', tableID)
-            print 'bar'
             return table
 
         d = self.avatar.callRemote('createTable', tableID)
-        d.addCallbacks(createdTable, self.errback)
+        d.addCallback(createdTable)
+        d.addErrback(self.errback)
         return d
 
     def joinTable(self, tableID):
@@ -143,6 +153,7 @@ class PymaccoClient(object):
         def leftTable(table):
             del self.tables[tableID]
             self.notify('leftTable', tableID)
+            return table
 
         d = self.avatar.callRemote('leaveTable', tableID)
         d.addCallbacks(leftTable, self.errback)
