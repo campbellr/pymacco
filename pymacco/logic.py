@@ -149,7 +149,7 @@ class Deck(object):
         return self
 
     def __isub__(self, other):
-        self.cards += other.cards
+        self.cards -= other.cards
         return self
 
 
